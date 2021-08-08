@@ -1,5 +1,7 @@
 version: '3.5'
+
 services:
+
   server:
     image: zabbix/zabbix-server-pgsql:alpine-latest
     ports:
@@ -27,11 +29,12 @@ services:
       - ZBX_HOUSEKEEPINGFREQUENCY=1
       - ZBX_MAXHOUSEKEEPERDELETE=5000
       - ZBX_PROXYCONFIGFREQUENCY=3600
+
   web-nginx-pgsql:
     image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
     ports:
-      - "80:8080"
-      - "443:8443"
+      - "8080:8080"
+      - "8443:8443"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
@@ -57,6 +60,7 @@ services:
       - ZBX_POSTMAXSIZE=64M
       - PHP_TZ=Europe/Moscow
       - ZBX_MAXEXECUTIONTIME=500
+      
   agent:
     image: zabbix/zabbix-agent:alpine-latest
     ports:
@@ -75,6 +79,7 @@ services:
       - server
     environment:
       - ZBX_SERVER_HOST=server
+      
   snmptraps:
     image: zabbix/zabbix-snmptraps:alpine-latest
     ports:
@@ -86,6 +91,7 @@ services:
       - server
     environment:
       - ZBX_SERVER_HOST=server
+      
   postgres-server:
     image: postgres:latest
     volumes:
