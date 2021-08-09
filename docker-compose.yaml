@@ -3,20 +3,20 @@ version: '3.5'
 services:
 
   server:
-    image: zabbix/zabbix-server-pgsql:alpine-latest
+    image: zabbix/zabbix-server-pgsql:alpine-5.4-latest
     ports:
       - "10051:10051"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro 
-      - /usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
-      - /usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
-      - /var/lib/zabbix/export:/var/lib/zabbix/export:rw
-      - /var/lib/zabbix/modules:/var/lib/zabbix/modules:ro
-      - /var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
-      - /var/lib/zabbix/ssh_keys:/var/lib/zabbix/ssh_keys:ro
-      - /var/lib/zabbix/mibs:/var/lib/zabbix/mibs:ro
-      - /var/lib/zabbix/snmptraps:/var/lib/zabbix/snmptraps:ro
+      - ./zbx_env/usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
+      - ./zbx_env/usr/lib/zabbix/externalscripts:/usr/lib/zabbix/externalscripts:ro
+      - ./zbx_env/var/lib/zabbix/export:/var/lib/zabbix/export:rw
+      - ./zbx_env/var/lib/zabbix/modules:/var/lib/zabbix/modules:ro
+      - ./zbx_env/var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
+      - ./zbx_env/var/lib/zabbix/ssh_keys:/var/lib/zabbix/ssh_keys:ro
+      - ./zbx_env/var/lib/zabbix/mibs:/var/lib/zabbix/mibs:ro
+      - ./zbx_env/var/lib/zabbix/snmptraps:/var/lib/zabbix/snmptraps:ro
     restart: always
     depends_on:
       - postgres-server
@@ -31,15 +31,15 @@ services:
       - ZBX_PROXYCONFIGFREQUENCY=3600
 
   web-nginx-pgsql:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-5.4-latest
     ports:
       - "8080:8080"
       - "8443:8443"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - /etc/ssl/nginx:/etc/ssl/nginx:ro
-      - /usr/share/zabbix/modules/:/usr/share/zabbix/modules/:ro
+      - ./zbx_env/etc/ssl/nginx:/etc/ssl/nginx:ro
+      - ./zbx_env/usr/share/zabbix/modules/:/usr/share/zabbix/modules/:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 10s
@@ -62,16 +62,16 @@ services:
       - ZBX_MAXEXECUTIONTIME=500
       
   agent:
-    image: zabbix/zabbix-agent:alpine-latest
+    image: zabbix/zabbix-agent:alpine-5.4-latest
     ports:
       - "10050:10050"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - /proc:/proc
-      - /sys:/sys
-      - /dev:/dev
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./zbx_env/etc/zabbix/zabbix_agentd.d:/etc/zabbix/zabbix_agentd.d:ro
+      - ./zbx_env/var/lib/zabbix/modules:/var/lib/zabbix/modules:ro
+      - ./zbx_env/var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
+      - ./zbx_env/var/lib/zabbix/ssh_keys:/var/lib/zabbix/ssh_keys:ro
     privileged: true
     pid: "host"
     restart: always
@@ -81,11 +81,11 @@ services:
       - ZBX_SERVER_HOST=server
       
   snmptraps:
-    image: zabbix/zabbix-snmptraps:alpine-latest
+    image: zabbix/zabbix-snmptraps:alpine-5.4-latest
     ports:
       - "162:1162/udp"
     volumes:
-      - /var/lib/zabbix/snmptraps:/var/lib/zabbix/snmptraps:rw
+      - ./snmptraps:/var/lib/zabbix/snmptraps:rw
     restart: always
     depends_on:
       - server
@@ -93,9 +93,12 @@ services:
       - ZBX_SERVER_HOST=server
       
   postgres-server:
-    image: postgres:latest
+    image: postgres:13-alpine
     volumes:
-      - /var/lib/postgresql/data:/var/lib/postgresql/data
+      - ./zbx_env/var/lib/postgresql/data:/var/lib/postgresql/data:rw
+      - ./.ZBX_DB_CA_FILE:/run/secrets/root-ca.pem:ro
+      - ./.ZBX_DB_CERT_FILE:/run/secrets/server-cert.pem:ro
+      - ./.ZBX_DB_KEY_FILE:/run/secrets/server-key.pem:ro
     environment:
       - POSTGRES_PASSWORD=zabbix
       - POSTGRES_USER=zabbix
@@ -105,3 +108,5 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      
+     
