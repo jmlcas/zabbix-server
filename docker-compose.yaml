@@ -91,7 +91,7 @@ services:
       - ZBX_SERVER_HOST=server
       
   postgres-server:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     volumes:
       - ./zbx_env/var/lib/postgresql/data:/var/lib/postgresql/data:rw
     restart: unless-stopped      
